@@ -1,0 +1,189 @@
+﻿ID,Work Item Type,Title 1,Title 2,Title 3,Description,Acceptance Criteria,Priority,Tags
+,Epic,EP-01 Pagos con QR en circuito cerrado para emisor regional,,,"Para emisores regionales de tarjetas (comercios regionales, municipios, cooperativas y mutuales) que necesitan que sus tarjetahabientes paguen en comercios sin POS, la solución Closed Loop QR es una plataforma de pagos con QR sobre la red propia del emisor que permite autorizar, registrar y operar cada pago de punta a punta. A diferencia de aceptar a través de una red internacional o un adquirente externo, esta solución reduce el costo por transacción, mantiene en el emisor el dato completo de cada compra y reutiliza el autorizador existente.",,1,closed-loop-qr
+,Feature,,FT-01 Onboarding e identidad del tarjetahabiente,,"Benefit hypothesis: Si el tarjetahabiente valida su identidad con biometría y documento al registrarse, el emisor reduce el riesgo de fraude de identidad y habilita el alta de tarjeta solo para personas verificadas.","- Un usuario sin verificación aprobada no puede dar de alta una tarjeta
+- El flujo completo de registro funciona en Android e iOS",1,closed-loop-qr
+,User Story,,,US-01 Registro de usuario,"Como tarjetahabiente, quiero registrarme con mis datos básicos, para poder usar la app de pagos del emisor.
+
+Notas: Política de contraseña a definir (ver PA-05).","1. Dado que abro la app por primera vez, cuando completo nombre, DNI, email y contraseña válidos y confirmo, entonces se crea mi usuario en estado 'pendiente de verificación'.
+2. Dado que dejo un campo obligatorio vacío o con formato inválido (DNI o email), cuando intento continuar, entonces veo el error junto al campo y no se crea el usuario.
+3. Dado que el email ya está registrado, cuando intento registrarme, entonces veo un mensaje que me ofrece iniciar sesión o recuperar la contraseña.
+4. Dado que ingreso una contraseña que no cumple la política definida, cuando intento continuar, entonces veo los requisitos que faltan.",1,closed-loop-qr; user-story
+,User Story,,,US-02 Validación de identidad biométrica y documental,"Como tarjetahabiente, quiero validar mi identidad con una selfie y mi DNI, para que el emisor me habilite a operar.
+
+Dependencias: Proveedor de KYC contratado por el emisor (supuesto 8). SDK disponible.
+
+Notas: Cantidad máxima de reintentos a definir (PA-05).","1. Dado que estoy registrado y pendiente de verificación, cuando completo la captura facial con prueba de vida y la validación de DNI, entonces mi usuario pasa a 'verificado'.
+2. Dado que la prueba de vida o la validación documental fallan, cuando recibo el resultado, entonces veo el motivo en lenguaje simple y la opción de reintentar.
+3. Dado que superé la cantidad máxima de reintentos, cuando intento de nuevo, entonces el sistema me indica cómo contactar al emisor.
+4. Dado cualquier resultado, cuando termina la verificación, entonces el estado y el identificador de verificación del proveedor quedan asociados a mi usuario.",1,closed-loop-qr; user-story
+,User Story,,,US-03 Login y recuperación de contraseña,"Como tarjetahabiente, quiero ingresar con email y contraseña y poder recuperarla, para acceder a la app de forma segura.","1. Dado que tengo usuario verificado, cuando ingreso email y contraseña correctos, entonces accedo al home.
+2. Dado que ingreso credenciales incorrectas, cuando confirmo, entonces veo un mensaje genérico que no revela si el email existe.
+3. Dado que olvidé mi contraseña, cuando solicito recuperarla, entonces recibo un email con un enlace de un solo uso y con vencimiento.
+4. Dado que uso el enlace válido, cuando defino una contraseña nueva que cumple la política, entonces puedo ingresar con ella y el enlace queda invalidado.",1,closed-loop-qr; user-story
+,Feature,,FT-02 Alta de tarjeta sin datos sensibles en el dispositivo,,"Benefit hypothesis: Si la app valida la tarjeta contra el autorizador y nunca persiste el PAN completo ni el CVV, la app queda fuera del alcance de tokenización PCI DSS y baja el costo de cumplimiento.","- El PAN completo no se persiste ni se registra en logs en ningún componente
+- Solo tarjetas validadas por el autorizador quedan habilitadas para pagar",1,closed-loop-qr
+,User Story,,,US-04 Alta de tarjeta validada por el autorizador,"Como tarjetahabiente verificado, quiero dar de alta mi tarjeta del emisor, para poder pagar con QR.
+
+Dependencias: EN-02 (SP de validación de tarjetahabiente).
+
+Notas: Ver PA-01: el SP de autorización requiere primeros 8 + últimos 4 dígitos; definir dónde se guarda el BIN de 8.","1. Dado que estoy verificado, cuando ingreso los 16 dígitos de mi tarjeta, entonces la app envía al autorizador DNI + últimos 4 dígitos para validarla.
+2. Dado que el autorizador responde 'válida', cuando termina la validación, entonces la tarjeta queda habilitada y se muestra con sus últimos 4 dígitos.
+3. Dado cualquier resultado, cuando termina el alta, entonces el PAN completo no queda persistido en el dispositivo, en el backend ni en logs.
+4. Dado el flujo de alta, cuando se muestra el formulario, entonces el CVV no se solicita.",1,closed-loop-qr; user-story
+,User Story,,,US-05 Tarjeta inválida en el alta,"Como tarjetahabiente, quiero saber por qué no se pudo dar de alta mi tarjeta, para resolverlo.
+
+Dependencias: EN-02.","1. Dado que el autorizador responde 'inválida', cuando termina la validación, entonces veo un mensaje que me sugiere revisar los datos o contactar al emisor y la tarjeta no queda habilitada.
+2. Dado que el autorizador no responde dentro del SLA, cuando vence el tiempo, entonces veo un mensaje de reintento y no se crea la tarjeta.",1,closed-loop-qr; user-story
+,Feature,,FT-03 Pago con QR: operación precargada (Modo 1),,"Benefit hypothesis: Si el comercio precarga monto y plan, el tarjetahabiente paga solo confirmando, lo que reduce errores de monto y tiempo en caja.","- Un pago precargado se completa sin que el tarjetahabiente ingrese datos
+- Una operación cancelada o vencida nunca se cobra",1,closed-loop-qr
+,User Story,,,US-06 Escanear QR y recuperar operación precargada,"Como tarjetahabiente, quiero escanear el QR del comercio y ver la operación que el comercio ya cargó, para pagar sin ingresar datos.
+
+Dependencias: US-13 (precarga del comercio).","1. Dado que el comercio precargó una operación vigente en esa terminal, cuando escaneo su QR estático, entonces la app consulta al portal por la terminal y muestra comercio, monto y plan de cuotas.
+2. Dado que escaneo un QR que no corresponde a un comercio adherido, cuando la app lo lee, entonces veo un mensaje de QR no válido y no se inicia ningún pago.
+3. Dado cualquier escaneo, cuando la app lee el QR, entonces los datos leídos no se persisten en el dispositivo.",1,closed-loop-qr; user-story
+,User Story,,,US-07 Confirmar pago precargado,"Como tarjetahabiente, quiero confirmar el pago precargado, para pagar mi compra.
+
+Dependencias: EN-03, EN-05.","1. Dado que veo una operación precargada vigente, cuando presiono pagar, entonces se envía al autorizador terminal + BIN + últimos 4 + monto + plan.
+2. Dado que el autorizador aprueba (00), cuando recibo la respuesta, entonces veo 'pago aprobado' con el número de autorización y la operación precargada queda consumida.
+3. Dado que la operación ya fue pagada, cuando otro usuario escanea el mismo QR, entonces esa operación no se ofrece de nuevo.",1,closed-loop-qr; user-story
+,User Story,,,US-08 Paso automático a monto libre si la precarga venció,"Como tarjetahabiente, quiero poder pagar igual si la operación precargada se canceló o venció, para no quedar trabado en la caja.
+
+Dependencias: US-09, US-14.","1. Dado que la operación precargada fue cancelada por el comercio, cuando escaneo el QR, entonces la app entra automáticamente en Modo 2.
+2. Dado que pasaron más de 10 minutos desde la precarga sin escaneo, cuando escaneo el QR, entonces la operación figura vencida y la app entra en Modo 2.
+3. Dado que la operación venció mientras la estoy viendo, cuando presiono pagar, entonces el pago no se envía al autorizador y paso a Modo 2.",1,closed-loop-qr; user-story
+,Feature,,FT-04 Pago con QR: monto libre (Modo 2),,"Benefit hypothesis: Si el tarjetahabiente puede pagar con monto libre eligiendo entre los planes vigentes del comercio, el comercio acepta pagos aunque no haya precargado la operación, con un único QR estático.","- Solo se ofrecen planes de cuotas vigentes para ese comercio
+- El pago en Modo 2 usa el mismo circuito de autorización que el Modo 1",1,closed-loop-qr
+,User Story,,,US-09 Ver planes de cuotas vigentes del comercio,"Como tarjetahabiente, quiero ver los planes de cuotas vigentes del comercio al escanear su QR, para elegir cómo pagar.
+
+Dependencias: EN-06.","1. Dado que no hay operación precargada vigente, cuando escaneo el QR, entonces la app consulta en línea los planes vigentes de ese comercio y los muestra en una lista.
+2. Dado que la consulta de planes falla o supera el SLA, cuando vence el tiempo, entonces veo un mensaje de reintento y no puedo confirmar el pago.
+3. Dado que el comercio no tiene planes vigentes, cuando escaneo el QR, entonces veo un mensaje de que el comercio no acepta pagos en este momento.",1,closed-loop-qr; user-story
+,User Story,,,US-10 Pagar con monto libre,"Como tarjetahabiente, quiero ingresar el monto y elegir el plan de cuotas, para pagar cuando el comercio no precargó la operación.
+
+Dependencias: EN-03, EN-05, US-09.","1. Dado que veo los planes vigentes, cuando ingreso un monto mayor a cero, elijo un plan y confirmo, entonces se envía la autorización con terminal + BIN + últimos 4 + monto + plan.
+2. Dado que no elegí plan o el monto es inválido, cuando intento pagar, entonces el botón de pago está deshabilitado y veo qué falta.
+3. Dado que el autorizador aprueba, cuando recibo la respuesta, entonces veo 'pago aprobado' con número de autorización.",1,closed-loop-qr; user-story
+,Feature,,FT-05 Resultado del pago e historial del tarjetahabiente,,"Benefit hypothesis: Si el resultado de cada pago es claro y queda en un historial, bajan las consultas a soporte y los pagos duplicados por reintento.","- Cada código de respuesta tiene un mensaje y una acción definidos
+- El historial muestra todas las transacciones propias en orden cronológico",1,closed-loop-qr
+,User Story,,,US-11 Resultado del pago según código de respuesta,"Como tarjetahabiente, quiero entender el resultado de mi pago, para saber si tengo que hacer algo más.
+
+Dependencias: EN-05.","1. Dado que el autorizador responde 00, cuando termina el pago, entonces veo 'aprobado' y el número de autorización.
+2. Dado que responde 51, cuando termina el pago, entonces veo 'fondos insuficientes' y la opción de volver.
+3. Dado que responde 12, cuando termina el pago, entonces veo 'tarjeta inválida' y la sugerencia de contactar al emisor.
+4. Dado que responde 68 o no hay respuesta dentro del SLA, cuando termina el tiempo, entonces veo 'no pudimos confirmar el pago', se me indica revisar el historial antes de reintentar y el botón de reintento no genera un segundo cobro.",1,closed-loop-qr; user-story
+,User Story,,,US-12 Historial de transacciones del tarjetahabiente,"Como tarjetahabiente, quiero ver mis transacciones, para controlar mis gastos.","1. Dado que tengo transacciones, cuando abro el historial, entonces veo todas en orden cronológico descendente con fecha, comercio, monto, plan, estado y número de autorización.
+2. Dado que una transacción fue revertida, cuando la veo en el historial, entonces figura con estado 'revertida'.
+3. Dado que no tengo transacciones, cuando abro el historial, entonces veo un estado vacío explicativo.",2,closed-loop-qr; user-story
+,Feature,,FT-06 Cobros del comercio (App Cobros y Portal perfil Comercio),,"Benefit hypothesis: Si el comercio puede precargar, cancelar, revertir y consultar sus operaciones desde el celular, no necesita POS ni soporte del emisor para operar.","- Las funciones del comercio están disponibles en App Cobros y en el Portal con el mismo comportamiento
+- El comercio solo ve y opera sus propias transacciones y terminales",1,closed-loop-qr
+,User Story,,,US-13 Precargar operación,"Como comercio, quiero cargar monto y plan de cuotas en mi terminal, para que el cliente solo tenga que confirmar.
+
+Notas: Ver PA-03: la regla de una sola operación pendiente por terminal es una propuesta a validar.","1. Dado que estoy logueado en App Cobros o Portal, cuando ingreso monto mayor a cero, elijo un plan vigente y confirmo, entonces la operación queda pendiente asociada a mi terminal con vencimiento a los 10 minutos.
+2. Dado que ya tengo una operación pendiente en esa terminal, cuando intento cargar otra, entonces el sistema me pide cancelar la anterior primero.
+3. Dado que pasan 10 minutos sin escaneo, cuando vence el plazo, entonces la operación pasa a 'vencida' automáticamente.",1,closed-loop-qr; user-story
+,User Story,,,US-14 Cancelar operación precargada,"Como comercio, quiero cancelar una operación precargada, para corregir un monto o un plan mal cargado.","1. Dado que tengo una operación pendiente no escaneada, cuando la cancelo, entonces pasa a 'cancelada' y ya no se ofrece al escanear el QR.
+2. Dado que la operación ya fue pagada, cuando intento cancelarla, entonces el sistema me ofrece la reversa en su lugar.",1,closed-loop-qr; user-story
+,User Story,,,US-15 Ver y descargar mis QR estáticos,"Como comercio, quiero ver y descargar los QR de mis terminales, para imprimirlos y exhibirlos.
+
+Dependencias: US-22.","1. Dado que mi comercio tiene terminales con QR generado, cuando abro 'Mis QR', entonces veo un QR por terminal con su identificador.
+2. Dado que elijo un QR, cuando lo descargo, entonces obtengo una imagen apta para impresión.",1,closed-loop-qr; user-story
+,User Story,,,US-16 Tablero de transacciones del comercio,"Como comercio, quiero ver mis ventas QR y POS web, para controlar lo que cobré.
+
+Dependencias: EN-01.","1. Dado que tengo transacciones, cuando abro el tablero, entonces veo las operaciones QR en tiempo real y las de POS web con su fecha de corte.
+2. Dado que filtro por fecha, terminal o estado, cuando aplico el filtro, entonces el listado y los totales se recalculan.
+3. Dado que soy usuario de un comercio, cuando consulto el tablero, entonces no veo transacciones de otros comercios.",2,closed-loop-qr; user-story
+,User Story,,,US-17 Reversa de transacción por el comercio,"Como comercio, quiero revertir una venta, para devolverle el dinero al cliente cuando corresponde.
+
+Dependencias: EN-03 (operación de reversa en el autorizador).
+
+Notas: Ventana de reversa y operación del autorizador a definir (PA-04).","1. Dado que tengo una transacción aprobada dentro de la ventana permitida, cuando solicito la reversa y la confirmo, entonces se envía al autorizador y la transacción pasa a 'revertida'.
+2. Dado que la transacción ya fue revertida, cuando intento revertirla otra vez, entonces el sistema lo impide.
+3. Dado cualquier reversa, cuando se ejecuta, entonces queda auditada con usuario, fecha y motivo.",1,closed-loop-qr; user-story
+,User Story,,,US-18 Paridad App Cobros y Portal perfil Comercio,"Como comercio, quiero hacer lo mismo desde la app o desde el portal web, para operar desde donde me resulte más cómodo.","1. Dado cualquiera de las historias US-13 a US-17, cuando se ejecuta desde App Cobros o desde el Portal, entonces el resultado y las reglas son los mismos.
+2. Dado que una operación se precarga en la app, cuando abro el portal, entonces la veo con el mismo estado.",2,closed-loop-qr; user-story
+,Feature,,FT-07 Administración del emisor (Portal perfil Emisor),,"Benefit hypothesis: Si el emisor administra sus comercios, usuarios, planes y QR en forma autónoma, puede escalar la red de comercios sin intervención del procesador.","- El emisor solo ve y opera datos propios
+- Todo alta, baja o modificación queda auditada con usuario y fecha",1,closed-loop-qr
+,User Story,,,US-19 ABM de comercios,"Como administrador del emisor, quiero dar de alta, modificar y dar de baja comercios y sus terminales, para gestionar mi red de aceptación.","1. Dado que soy administrador del emisor, cuando doy de alta un comercio con sus datos y al menos una terminal, entonces queda activo y asociado a mi emisor.
+2. Dado que doy de baja un comercio, cuando confirmo, entonces sus QR dejan de aceptar pagos y su historial se conserva.
+3. Dado cualquier cambio, cuando se guarda, entonces queda auditado.",1,closed-loop-qr; user-story
+,User Story,,,US-20 ABM de usuarios de comercios,"Como administrador del emisor, quiero gestionar los usuarios de mis comercios, para controlar quién cobra y quién revierte.
+
+Dependencias: EN-08.","1. Dado un comercio activo, cuando creo un usuario con email, entonces recibe una invitación para definir su contraseña.
+2. Dado que deshabilito un usuario, cuando intenta ingresar, entonces el acceso es rechazado.",1,closed-loop-qr; user-story
+,User Story,,,US-21 ABM de planes de cuotas,"Como administrador del emisor, quiero gestionar los planes de cuotas por comercio, para definir las condiciones de financiación.
+
+Notas: Ver PA-02: definir si el maestro de planes vive en el portal o en el sistema de emisión.","1. Dado un comercio activo, cuando asigno un plan con cantidad de cuotas y vigencia, entonces el plan se ofrece en Modo 1 y Modo 2 dentro de su vigencia.
+2. Dado que un plan vence o lo desactivo, cuando un tarjetahabiente escanea el QR, entonces ese plan no se ofrece.",1,closed-loop-qr; user-story
+,User Story,,,US-22 Generar y descargar QR por comercio y terminal,"Como administrador del emisor, quiero generar los QR estáticos de cada terminal, para entregarlos a los comercios.
+
+Notas: Contenido exacto del QR a confirmar (PA-06).","1. Dado un comercio con terminales, cuando genero el QR de una terminal, entonces el QR codifica los datos del comercio y el ID de terminal.
+2. Dado un QR generado, cuando lo descargo, entonces obtengo una imagen apta para impresión.
+3. Dado que regenero el QR de una terminal, cuando confirmo, entonces el anterior deja de ser válido.",1,closed-loop-qr; user-story
+,User Story,,,US-23 Tablero del emisor,"Como administrador del emisor, quiero ver las transacciones de todos mis comercios, para monitorear la operación.
+
+Dependencias: EN-01.","1. Dado que tengo comercios con operaciones, cuando abro el tablero, entonces veo QR en tiempo real y POS web con su fecha de corte, con filtros por comercio, fecha y estado.
+2. Dado que soy administrador de un emisor, cuando consulto, entonces no veo datos de otros emisores.",2,closed-loop-qr; user-story
+,User Story,,,US-24 Reversa de transacciones de mis comercios,"Como administrador del emisor, quiero revertir transacciones de mis comercios, para resolver reclamos.
+
+Dependencias: US-17.","1. Dado una transacción aprobada de uno de mis comercios dentro de la ventana permitida, cuando la revierto, entonces pasa a 'revertida' y queda auditada.
+2. Dado una transacción de otro emisor, cuando intento revertirla, entonces el sistema lo impide.",1,closed-loop-qr; user-story
+,User Story,,,EN-08 Perfiles y permisos del portal,"Como plataforma, necesito controlar el acceso por perfil (Procesador, Emisor, Comercio), para que cada usuario vea y opere solo lo que le corresponde.","1. Dado un usuario de perfil Comercio, cuando accede, entonces solo ve datos de su comercio.
+2. Dado un usuario de perfil Emisor, cuando accede, entonces solo ve datos de su emisor y sus comercios.
+3. Dado un usuario de perfil Procesador, cuando accede, entonces ve todos los emisores.
+4. Dado un intento de acceso a un recurso de otro perfil o entidad, cuando se ejecuta, entonces es rechazado y queda registrado.",1,closed-loop-qr; enabler
+,Feature,,FT-08 Administración del procesador (Portal perfil Procesador),,"Benefit hypothesis: Si el procesador gestiona emisores y ve un tablero consolidado, puede operar la plataforma para varios emisores desde un solo lugar.","- El tablero consolida transacciones QR y POS web de todos los emisores
+- Los datos de POS web indican su fecha de corte",1,closed-loop-qr
+,User Story,,,US-25 ABM de emisores,"Como administrador del procesador, quiero dar de alta y gestionar emisores, para sumar nuevas entidades a la plataforma.
+
+Dependencias: US-27.","1. Dado que soy superadministrador, cuando doy de alta un emisor con sus datos, BINs y branding, entonces queda disponible para operar.
+2. Dado que deshabilito un emisor, cuando sus usuarios intentan operar, entonces el acceso es rechazado y el historial se conserva.",1,closed-loop-qr; user-story
+,User Story,,,US-26 Tablero consolidado del procesador,"Como administrador del procesador, quiero un tablero con las transacciones de todos los emisores, para monitorear la plataforma completa.
+
+Dependencias: EN-01.","1. Dado que soy superadministrador, cuando abro el tablero, entonces veo transacciones QR y POS web de todos los emisores, con filtro por emisor.
+2. Dado que los datos de POS web vienen de la sincronización diaria, cuando los veo, entonces se indica la fecha y hora del último corte.",2,closed-loop-qr; user-story
+,User Story,,,EN-01 Sincronización diaria de transacciones POS web,"Como plataforma, necesito importar una vez por día las transacciones de POS web, para mostrar en los tableros la operación completa de cada comercio.
+
+Notas: Ver PA-07: fuente de la consulta (autorizador o traductor).","1. Dado el horario de corte configurado, cuando corre el proceso, entonces se importan las transacciones POS web del día anterior sin duplicar las ya importadas.
+2. Dado que el proceso falla, cuando termina, entonces queda registrado el error y se genera una alerta.
+3. Dado un proceso exitoso, cuando termina, entonces se registra la fecha y hora de corte que muestran los tableros.",1,closed-loop-qr; enabler
+,Feature,,FT-09 Integración con el autorizador del emisor,,"Benefit hypothesis: Si la plataforma reutiliza el autorizador existente vía stored procedures, el emisor lanza pagos QR sin reemplazar su core de autorización.","- Autorización con SLA menor a 1 segundo bajo 60 a 70 conexiones simultáneas
+- Ruteo correcto por BIN entre las dos instancias del autorizador",1,closed-loop-qr
+,User Story,,,EN-02 Integración: validación de tarjetahabiente,"Como plataforma, necesito invocar el stored procedure de validación del autorizador, para dar de alta tarjetas en forma segura.
+
+Dependencias: SP expuesto por el emisor antes del desarrollo (supuesto 1). Bloqueante de FT-02.","1. Dado DNI + últimos 4 dígitos, cuando se invoca el SP, entonces la respuesta 'válida' o 'inválida' se mapea al resultado del alta.
+2. Dado que el SP no responde dentro del SLA, cuando vence el tiempo, entonces se informa error recuperable y no se crea la tarjeta.
+3. Dado cualquier invocación, cuando se registra en logs, entonces no se registran dígitos de la tarjeta más allá de los últimos 4.",1,closed-loop-qr; enabler
+,User Story,,,EN-03 Integración: autorización de pago,"Como plataforma, necesito invocar el stored procedure de autorización, para aprobar o rechazar cada pago.
+
+Dependencias: SP expuesto por el emisor antes del desarrollo (supuesto 1).","1. Dado terminal + BIN + últimos 4 + monto + plan, cuando se invoca el SP, entonces se obtiene código de respuesta y número de autorización.
+2. Dado los códigos 00, 51, 12 y 68, cuando se reciben, entonces se mapean a los estados aprobado, sin fondos, inválida y timeout.
+3. Dado un código no contemplado, cuando se recibe, entonces se trata como rechazo genérico y se registra para análisis.",1,closed-loop-qr; enabler
+,User Story,,,EN-04 Ruteo por BIN entre instancias del autorizador,"Como plataforma, necesito enrutar cada operación a la instancia correcta del autorizador según el BIN, para operar durante la convivencia de las dos versiones.
+
+Notas: La tabla de ruteo es un parámetro, no código.","1. Dado un BIN configurado para la instancia actual, cuando se envía la operación, entonces llega a esa instancia.
+2. Dado un BIN configurado para la instancia nueva, cuando se envía la operación, entonces llega a esa instancia.
+3. Dado un BIN sin configuración, cuando se envía la operación, entonces se rechaza con error controlado y alerta.
+4. Dado un cambio en la tabla de ruteo, cuando se guarda, entonces aplica sin redeploy y queda auditado.",1,closed-loop-qr; enabler
+,User Story,,,EN-05 Idempotencia y manejo de timeout,"Como plataforma, necesito que un reintento no genere un segundo cobro, para proteger al tarjetahabiente ante timeouts.
+
+Notas: Ver PA-08: el autorizador debe permitir consultar el estado de una operación.","1. Dado un pago con identificador único de operación, cuando la app reintenta por timeout, entonces el portal no envía una segunda autorización si la primera fue aprobada.
+2. Dado un código 68 o falta de respuesta, cuando vence el SLA, entonces la operación queda en estado 'a confirmar' y se resuelve consultando el estado antes de cualquier reintento.
+3. Dado una operación 'a confirmar', cuando se resuelve, entonces el tarjetahabiente y el comercio ven el estado final.",1,closed-loop-qr; enabler
+,Feature,,FT-10 Integración con el sistema de emisión,,"Benefit hypothesis: Si los planes de cuotas se consultan en línea al sistema de emisión, el tarjetahabiente siempre ve las condiciones vigentes del comercio.","- La consulta de planes responde en menos de 1 segundo
+- Si la consulta falla, el pago en Modo 2 no se habilita y se informa al usuario",1,closed-loop-qr
+,User Story,,,EN-06 Integración: consulta de planes vigentes,"Como plataforma, necesito consultar en línea los planes de cuotas vigentes por comercio, para ofrecerlos en el Modo 2.
+
+Dependencias: Endpoint expuesto por el emisor (supuesto 2). Bloqueante de FT-04.
+
+Notas: Protocolo a confirmar (PA-07).","1. Dado un comercio, cuando se consulta el sistema de emisión, entonces se obtiene la lista de planes vigentes en menos de 1 segundo.
+2. Dado que la consulta falla o supera el SLA, cuando vence el tiempo, entonces se devuelve error recuperable a la app.",1,closed-loop-qr; enabler
+,Feature,,FT-11 White label y publicación,,"Benefit hypothesis: Si la app se configura con la marca de cada emisor, la misma plataforma se vende a varios emisores sin desarrollo adicional.","- Logo, colores y nombre de producto se configuran por emisor
+- Las apps quedan publicadas en Google Play y App Store bajo la cuenta del emisor",1,closed-loop-qr
+,User Story,,,US-27 Branding por emisor,"Como emisor, quiero que la app tenga mi logo, colores y nombre de producto, para que mis clientes la reconozcan como propia.
+
+Dependencias: Branding provisto por el emisor (supuesto 6).","1. Dado un emisor con branding cargado, cuando se genera su versión de la app, entonces muestra su logo, paleta y nombre de producto.
+2. Dado que falta algún elemento de branding, cuando se intenta generar la versión, entonces el proceso lo informa y no publica.",2,closed-loop-qr; user-story
+,User Story,,,EN-07 Publicación en tiendas,"Como emisor, necesito publicar las apps en Google Play y App Store bajo mi cuenta, para distribuirlas a mis clientes.
+
+Dependencias: Cuentas de desarrollador del emisor.","1. Dado un build aprobado, cuando se entrega, entonces incluye el binario firmado y el material para la ficha de la tienda.
+2. Dado el proceso de publicación, cuando el emisor lo ejecuta, entonces cuenta con asistencia para la configuración y la publicación.",1,closed-loop-qr; enabler
