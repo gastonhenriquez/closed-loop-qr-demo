@@ -1,0 +1,682 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Closed Loop Tarjeta Regional</title><meta name="description" content="Demo animada: pago con QR en circuito cerrado entre tarjetahabiente, comercio y emisor."></head><body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700;800;900&family=Roboto+Slab:wght@700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: 3 actores en columnas unidos por el riel del circuito cerrado */
+:root{
+  --navy:#1D2B6C; --deep:#16225A; --panel:#22337A; --panel-2:#2A3D8C; --line:#3B4E9E;
+  --teal:#FA5555; --teal-2:#85E7FE; --teal-soft:rgba(250,85,85,.18);
+  --blue:#526CFD; --cyan:#85E7FE; --amber:#FFB600;
+  --grad:linear-gradient(90deg,#FA5555 0%,#526CFD 100%);
+  --ink:#FFFFFF; --muted:#B5BFE6; --dim:#7D89C2;
+  --paper:#F5F7FA; --paper-2:#FFFFFF; --pink:#0B1628; --p-ink:#0E1A2B; --p-muted:#6A788D; --p-line:#E3E8EF;
+  --ok:#00A88F; --ok-soft:#DDF6F1; --warn:#E59A1A; --warn-soft:#FDF1DC;
+  --f-display:"Avenir Next","Avenir Next LT Pro","Mulish",system-ui,sans-serif;
+  --f-body:"Avenir Next","Avenir Next LT Pro","Mulish",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-brand:"Roboto Slab",Georgia,serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--navy);color:var(--ink)}
+body{font-family:var(--f-body);padding-inline:24px;padding-block:20px 28px;min-height:100%}
+.wrap{max-width:1360px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+
+/* Header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.wordmark{font-family:var(--f-brand);font-weight:700;font-size:26px;letter-spacing:-.01em;color:#fff;line-height:1}
+.wordmark i{font-style:normal;color:var(--teal)}
+.brand h1{font-family:var(--f-display);font-size:22px;font-weight:800;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+.by{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+.by b{font-family:var(--f-display);color:var(--ink);font-weight:800;font-size:14px;letter-spacing:.02em}
+.by .wordmark{font-size:18px}
+.by .plus{color:var(--teal);font-weight:700}
+
+/* Step caption */
+.caption{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:18px;background:var(--deep);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
+.num{font-family:var(--f-display);font-size:36px;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1;min-width:2ch;font-variant-numeric:tabular-nums}
+.cap-t{font-family:var(--f-display);font-size:19px;font-weight:800;margin:0;text-wrap:balance}
+.cap-d{margin:4px 0 0;color:var(--muted);font-size:13.5px;max-width:110ch;min-height:1.4em}
+.who{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.chip{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 9px;border-radius:99px;border:1px solid var(--line);color:var(--dim);transition:all .3s}
+.chip.on{color:#fff;background:var(--grad);border-color:transparent}
+.bar{grid-column:1/-1;display:flex;gap:6px}
+.bar i{flex:1;height:3px;border-radius:3px;background:var(--line);overflow:hidden;position:relative}
+.bar i b{position:absolute;inset:0;width:0;background:var(--grad)}
+.bar i.done b{width:100%}
+
+/* Stage */
+.stage{position:relative;padding-bottom:96px}
+.cols{display:grid;grid-template-columns:262px 262px minmax(0,1fr);gap:28px;align-items:end}
+.col{display:flex;flex-direction:column;gap:10px;transition:opacity .4s, filter .4s}
+.col.dim{opacity:.42;filter:saturate(.6)}
+.lbl{display:flex;flex-direction:column;gap:2px}
+.lbl small{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);font-weight:800}
+.lbl span{font-family:var(--f-display);font-size:15px;font-weight:800}
+
+/* Phone */
+.phone{position:relative;width:262px;height:500px;border-radius:38px;background:#0E1540;padding:9px;box-shadow:0 0 0 1px #4A5DB0,0 24px 60px rgba(0,0,0,.45)}
+.screen{position:relative;width:100%;height:100%;border-radius:30px;overflow:hidden;background:var(--paper);color:var(--p-ink)}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:76px;height:20px;border-radius:12px;background:#0E1540;z-index:20}
+.sbar{position:absolute;top:0;left:0;right:0;height:36px;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:11px;font-weight:700;z-index:10;color:inherit}
+.scr{position:absolute;inset:0;padding:40px 16px 16px;display:flex;flex-direction:column;gap:12px;opacity:0;transform:translateY(8px);transition:opacity .35s, transform .35s;pointer-events:none}
+.scr.show{opacity:1;transform:none}
+.app-h{display:flex;align-items:center;justify-content:space-between}
+.app-h b{font-family:var(--f-display);font-size:14px}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--grad);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center}
+.muted{color:var(--p-muted);font-size:11.5px}
+.btn{background:var(--navy);color:#fff;border-radius:12px;padding:12px;text-align:center;font-weight:700;font-size:13px;transition:transform .15s, background .2s}
+.btn.teal{background:var(--teal);color:#fff}
+.btn.press{transform:scale(.95);background:var(--teal);color:#fff}
+.list{display:flex;flex-direction:column;gap:6px}
+.row{display:flex;justify-content:space-between;align-items:center;background:var(--paper-2);border:1px solid var(--p-line);border-radius:10px;padding:8px 10px;font-size:12px}
+.row b{font-weight:700}
+.big{font-family:var(--f-display);font-size:30px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+
+/* Card embebida */
+.card{position:relative;height:138px;border-radius:14px;background:linear-gradient(135deg,#FA5555 0%,#8A63C8 50%,#526CFD 100%);color:#fff;padding:14px;overflow:hidden;box-shadow:0 10px 24px rgba(11,22,40,.25)}
+.card::after{content:"";position:absolute;right:-30px;top:-40px;width:150px;height:150px;border-radius:50%;border:22px solid rgba(255,255,255,.14)}
+.card .cn{font-size:10px;letter-spacing:.14em;text-transform:uppercase;opacity:.75;font-weight:700}
+.card .chipc{width:30px;height:22px;border-radius:5px;background:linear-gradient(135deg,#E8D9A8,#B89B52);margin-top:14px}
+.card .pan{font-family:var(--f-mono);font-size:12.5px;letter-spacing:.06em;margin-top:12px;white-space:nowrap}
+.card .nm{display:flex;justify-content:space-between;font-size:10.5px;margin-top:8px;opacity:.85}
+.card .tag{position:absolute;right:12px;top:12px;font-size:9px;font-weight:800;letter-spacing:.1em;background:#fff;color:var(--navy);padding:3px 6px;border-radius:5px}
+.card.mini{height:auto;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.card.mini::after{display:none}
+.card.mini .chipc{margin:0;width:24px;height:17px}
+.card.mini .pan{margin:0;font-size:12px}
+
+/* Scanner */
+.cam{flex:1;background:#0E1540;border-radius:18px;position:relative;display:grid;place-items:center;overflow:hidden}
+.vf{position:relative;width:170px;height:170px}
+.vf canvas{width:100%;height:100%;border-radius:8px;opacity:.9}
+.vf .c{position:absolute;width:26px;height:26px;border:3px solid var(--teal)}
+.vf .c1{top:-8px;left:-8px;border-right:0;border-bottom:0}
+.vf .c2{top:-8px;right:-8px;border-left:0;border-bottom:0}
+.vf .c3{bottom:-8px;left:-8px;border-right:0;border-top:0}
+.vf .c4{bottom:-8px;right:-8px;border-left:0;border-top:0}
+.scanline{position:absolute;left:0;right:0;height:2px;background:var(--teal);box-shadow:0 0 12px var(--teal);animation:scan 1.4s ease-in-out infinite alternate}
+@keyframes scan{from{top:4%}to{top:94%}}
+.read{white-space:nowrap;position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:var(--teal);color:#fff;font-weight:800;font-size:11.5px;padding:6px 12px;border-radius:99px;opacity:0;transition:opacity .3s}
+.read.on{opacity:1}
+
+/* Confirm */
+.merchant{display:flex;gap:10px;align-items:center;background:var(--paper-2);border:1px solid var(--p-line);border-radius:12px;padding:10px}
+.mlogo{width:34px;height:34px;border-radius:9px;background:var(--warn-soft);color:#9A5B00;display:grid;place-items:center;font-weight:800;font-size:13px}
+.finger{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:auto}
+.fp{width:58px;height:58px;border-radius:50%;border:2px solid var(--p-line);display:grid;place-items:center;transition:all .4s}
+.fp svg{width:30px;height:30px;stroke:var(--p-muted);transition:stroke .4s}
+.fp.scanning{border-color:var(--teal);box-shadow:0 0 0 6px var(--teal-soft)}
+.fp.scanning svg,.fp.okk svg{stroke:var(--ok)}
+.fp.okk{border-color:var(--ok);background:var(--ok-soft)}
+
+/* Processing / result */
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+.spin{width:46px;height:46px;border-radius:50%;border:4px solid var(--p-line);border-top-color:var(--teal);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.okc{width:68px;height:68px;border-radius:50%;background:var(--ok-soft);display:grid;place-items:center}
+.okc svg{width:34px;height:34px;stroke:var(--ok);stroke-width:3;fill:none;stroke-dasharray:40;stroke-dashoffset:40}
+.scr.show .okc svg{animation:draw .6s .2s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.receipt{width:100%;background:var(--paper-2);border:1px solid var(--p-line);border-radius:12px;padding:6px 12px}
+.receipt div{display:flex;justify-content:space-between;font-size:11.5px;padding:5px 0;border-bottom:1px dashed var(--p-line)}
+.receipt div:last-child{border:0}
+.receipt span{color:var(--p-muted)}
+.receipt b{font-family:var(--f-mono);font-size:11px}
+
+/* Comercio app */
+.co .app-h b{color:var(--p-ink)}
+.amt-box{background:var(--paper-2);border:1px solid var(--p-line);border-radius:14px;padding:14px;text-align:center}
+.amt-box .big{min-height:38px}
+.caret{display:inline-block;width:2px;height:26px;background:var(--teal);margin-left:2px;vertical-align:-3px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.keys span{background:var(--paper-2);border:1px solid var(--p-line);border-radius:9px;text-align:center;padding:8px 0;font-weight:700;font-size:14px;transition:background .15s}
+.keys span.hit{background:var(--teal);color:#fff;border-color:var(--teal)}
+.qrbox{background:var(--paper-2);border:1px solid var(--p-line);border-radius:16px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.qrbox canvas{width:168px;height:168px}
+.qr-amt{font-family:var(--f-display);font-weight:700;font-size:22px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:5px 10px;border-radius:99px;background:var(--warn-soft);color:#8A5300}
+.pill.ok{background:var(--ok-soft);color:#00735F}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+
+/* Back office */
+.bo{height:500px;background:var(--paper);color:var(--p-ink);border-radius:16px;overflow:hidden;display:grid;grid-template-columns:150px minmax(0,1fr);box-shadow:0 0 0 1px #4A5DB0,0 24px 60px rgba(0,0,0,.45)}
+.side{background:var(--deep);color:var(--muted);padding:16px 10px;display:flex;flex-direction:column;gap:4px;font-size:12px}
+.side .t{color:var(--ink);font-family:var(--f-display);font-weight:600;font-size:13px;padding:0 8px 2px}
+.side .s{font-size:10px;color:var(--dim);padding:0 8px 14px}
+.side a{padding:7px 8px;border-radius:8px;color:inherit;text-decoration:none;font-weight:600}
+.side a.on{background:var(--grad);color:#fff}
+.side .ft{margin-top:auto;font-size:10px;color:var(--dim);padding:0 8px;line-height:1.5}
+.main{padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0;overflow:hidden}
+.main h3{margin:0;font-family:var(--f-display);font-size:15px;font-weight:800;display:flex;justify-content:space-between;align-items:center}
+.live{font-family:var(--f-body);font-size:10.5px;font-weight:700;color:#00735F;display:flex;align-items:center;gap:6px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.kpi{background:var(--paper-2);border:1px solid var(--p-line);border-radius:10px;padding:9px 10px;transition:box-shadow .4s}
+.kpi small{display:block;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--p-muted);font-weight:700}
+.kpi b{display:block;font-family:var(--f-display);font-weight:800;font-size:18px;margin-top:3px;font-variant-numeric:tabular-nums}
+.kpi.flash{box-shadow:0 0 0 2px var(--blue)}
+.split{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:10px;flex:1;min-height:0}
+.panel{background:var(--paper-2);border:1px solid var(--p-line);border-radius:12px;padding:10px 12px;min-width:0;overflow:hidden;display:flex;flex-direction:column;gap:6px;transition:box-shadow .4s}
+.panel.glow{box-shadow:0 0 0 2px var(--teal),0 8px 24px rgba(250,85,85,.2)}
+.panel h4{margin:0;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--p-muted)}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--p-muted);font-weight:700;padding:4px 4px;border-bottom:1px solid var(--p-line)}
+td{padding:6px 4px;border-bottom:1px solid var(--p-line);white-space:nowrap}
+td.m{font-family:var(--f-mono);font-size:10.5px;font-variant-numeric:tabular-nums}
+td.r,th.r{text-align:right}
+tr.new{animation:rowin .5s ease}
+tr.new td{background:#EEF1FF}
+@keyframes rowin{from{opacity:0;transform:translateY(-6px)}}
+.st{font-size:9.5px;font-weight:800;padding:3px 7px;border-radius:99px;background:var(--ok-soft);color:#00735F}
+.st.pend{background:var(--warn-soft);color:#8A5300}
+.st.rej{background:#FDE3E3;color:#A32020}
+.liq div{display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-bottom:1px dashed var(--p-line)}
+.liq div:last-child{border:0}
+.liq span{color:var(--p-muted)}
+.liq b{font-family:var(--f-mono);font-size:10.5px}
+.conc{margin-top:auto;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--p-muted);padding:8px;border-radius:9px;background:var(--paper);transition:all .4s}
+.conc.on{background:var(--ok-soft);color:#00735F}
+
+/* Rail del circuito cerrado */
+.rail{position:absolute;left:0;right:0;bottom:0;height:72px}
+.track{position:absolute;left:0;right:0;top:34px;height:4px;border-radius:4px;background:var(--line);overflow:hidden}
+.track::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,#fff,transparent);transform:translateX(-100%);opacity:0}
+.rail.full .track{background:var(--grad)}
+.rail.full .track::after{opacity:1;animation:sweep 1.8s linear infinite}
+@keyframes sweep{to{transform:translateX(100%)}}
+.port{position:absolute;top:-24px;width:2px;height:60px;background:var(--line);transform:translateX(-1px)}
+.port::after{content:"";position:absolute;bottom:-6px;left:-5px;width:12px;height:12px;border-radius:50%;background:var(--navy);border:2px solid var(--line)}
+.port.live,.rail.full .port{background:var(--teal)}
+.port.live::after,.rail.full .port::after{border-color:var(--teal);background:var(--teal)}
+.rail-lbl{position:absolute;top:46px;left:0;font-size:11px;color:var(--muted);letter-spacing:.04em}
+.rail-lbl b{color:var(--cyan);font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:10.5px;margin-right:8px}
+.authz{position:absolute;top:14px;transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:6px 12px;display:flex;align-items:center;gap:10px;font-size:11.5px;font-weight:700;white-space:nowrap;transition:all .35s;z-index:2}
+.authz .ic{width:22px;height:22px;border-radius:6px;background:var(--grad);display:grid;place-items:center;color:#fff;font-family:var(--f-mono);font-size:10px}
+.authz.busy{border-color:var(--amber)}
+.authz.ok{border-color:var(--teal);box-shadow:0 0 0 4px var(--teal-soft)}
+.checks{display:flex;gap:10px;font-size:10.5px;font-weight:600;color:var(--dim)}
+.checks span{transition:color .3s}
+.checks span.y{color:var(--teal-2)}
+.pk{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 4px rgba(133,231,254,.3),0 0 18px var(--cyan);z-index:5;pointer-events:none}
+.pk em{position:absolute;left:18px;top:-4px;font-style:normal;font-size:10px;font-weight:800;color:var(--teal-2);white-space:nowrap;font-family:var(--f-mono)}
+
+/* Cierre */
+.thesis{display:flex;align-items:center;gap:18px;flex-wrap:wrap;background:var(--deep);border:1px solid var(--line);border-radius:14px;padding:12px 18px;transition:border-color .4s, box-shadow .4s}
+.thesis.on{border-color:var(--teal);box-shadow:0 0 0 4px var(--teal-soft)}
+.thesis p{margin:0;flex:1;min-width:240px;font-size:13.5px;color:var(--muted)}
+.thesis p b{color:var(--ink)}
+.ctrls{display:flex;gap:6px}
+.ctrls button{font:inherit;font-size:12px;font-weight:800;color:var(--ink);background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:7px 12px;cursor:pointer}
+.ctrls button:hover{border-color:var(--teal)}
+.ctrls button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+body.rec .ctrls{display:none}
+.foot{position:relative;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);padding-top:10px}
+.foot::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;border-radius:3px;background:var(--grad)}
+.foot span:last-child{font-family:var(--f-brand);font-weight:700;color:#fff;font-size:13px}
+.foot i{font-style:normal;color:var(--teal)}
+
+@media (max-width:1100px){
+  .cols{grid-template-columns:repeat(2,262px);justify-content:center}
+  .col.c-bo{grid-column:1/-1}
+  .stage{padding-bottom:0}
+  .rail{display:none}
+}
+@media (max-width:620px){
+  body{padding-inline:16px}
+  .cols{grid-template-columns:262px}
+  .caption{grid-template-columns:auto 1fr}
+  .who{grid-column:1/-1;justify-content:flex-start}
+  .bo{grid-template-columns:minmax(0,1fr);height:auto}
+  .side{display:none}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .split{grid-template-columns:minmax(0,1fr)}
+  .panel{overflow-x:auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div>
+        <h1>Pago con QR · Closed Loop · Tarjeta Regional</h1>
+        <p>Cómo viaja un pago entre tarjetahabiente, comercio y emisor sin salir de la red</p>
+      </div>
+    </div>
+    <div class="by">Prototipo de producto <span class="plus">·</span><b>Datos ficticios</b></div>
+  </header>
+
+  <section class="caption" aria-live="polite">
+    <div class="num" id="num">1</div>
+    <div>
+      <p class="cap-t" id="capT"></p>
+      <p class="cap-d" id="capD"></p>
+    </div>
+    <div class="who">
+      <span class="chip" data-a="th">Tarjetahabiente</span>
+      <span class="chip" data-a="co">Comercio</span>
+      <span class="chip" data-a="em">Emisor</span>
+    </div>
+    <div class="bar" id="bar"></div>
+  </section>
+
+  <section class="stage" id="stage">
+    <div class="cols">
+      <!-- TARJETAHABIENTE -->
+      <div class="col c-th" data-a="th">
+        <div class="lbl"><small>Tarjetahabiente</small><span>App Tarjeta Regional</span></div>
+        <div class="phone" id="phTH">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="sbar"><span>9:41</span><span>5G ▮▮▮</span></div>
+
+            <div class="scr" data-s="th-home">
+              <div class="app-h"><b>Hola, Juan</b><div class="avatar">JP</div></div>
+              <div class="card">
+                <div class="cn">Tarjeta Regional</div>
+                <div class="chipc"></div>
+                <div class="pan">•••• •••• •••• 4523</div>
+                <div class="nm"><span>JUAN PÉREZ</span><span>Disp. $ 480.000</span></div>
+                <div class="tag">EMBEBIDA</div>
+              </div>
+              <div class="btn" id="btnPay">Pagar con QR</div>
+              <div class="muted" style="font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:10px">Últimos movimientos</div>
+              <div class="list">
+                <div class="row"><span>Farmacia Centro</span><b>$ 8.900</b></div>
+                <div class="row"><span>Panadería Sol</span><b>$ 3.250</b></div>
+                <div class="row"><span>Ferretería Norte</span><b>$ 21.400</b></div>
+              </div>
+            </div>
+
+            <div class="scr" data-s="th-scan" style="background:#0E1540;color:#fff">
+              <div class="app-h"><b style="color:#fff">Escaneá el QR</b><span class="muted" style="color:#8C9DB6">Cancelar</span></div>
+              <div class="cam">
+                <div class="vf">
+                  <canvas class="qr" width="200" height="200"></canvas>
+                  <i class="c c1"></i><i class="c c2"></i><i class="c c3"></i><i class="c c4"></i>
+                  <div class="scanline" id="scanline"></div>
+                </div>
+                <div class="read" id="readOk">QR leído · Almacén Don Pedro</div>
+              </div>
+            </div>
+
+            <div class="scr" data-s="th-confirm">
+              <div class="app-h"><b>Confirmá el pago</b></div>
+              <div class="merchant"><div class="mlogo">DP</div><div><b style="font-size:13px">Almacén Don Pedro</b><div class="muted">Comercio adherido · Terminal 0142</div></div></div>
+              <div style="text-align:center"><div class="muted">Monto</div><div class="big">$ 12.500</div><div class="muted">1 cuota sin interés</div></div>
+              <div class="card mini"><div class="chipc"></div><div class="pan">•••• 4523</div><span style="margin-left:auto;font-size:10px;opacity:.8">Tarjeta Regional</span></div>
+              <div class="finger">
+                <div class="fp" id="fp"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><path d="M12 11v4M8.5 8.5a5 5 0 0 1 8 4v2M7 13v-1a5 5 0 0 1 .4-2M9.5 15.5V12a2.5 2.5 0 0 1 5 0v4.5M5 9a8 8 0 0 1 14 3v1M17 19c.6-1 1-2.3 1-4"/></svg></div>
+                <div class="muted" id="fpTxt">Apoyá tu huella para confirmar</div>
+              </div>
+            </div>
+
+            <div class="scr" data-s="th-proc">
+              <div class="center">
+                <div class="spin"></div>
+                <b style="font-size:14px">Autorizando…</b>
+                <div class="muted">Consultando al emisor de tu tarjeta</div>
+              </div>
+            </div>
+
+            <div class="scr" data-s="th-ok">
+              <div class="center">
+                <div class="okc"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+                <b style="font-size:16px">Pago aprobado</b>
+                <div class="big" style="font-size:26px">$ 12.500</div>
+                <div class="receipt">
+                  <div><span>Comercio</span><b>Almacén Don Pedro</b></div>
+                  <div><span>Tarjeta</span><b>•••• 4523</b></div>
+                  <div><span>Autorización</span><b>A-708315</b></div>
+                  <div><span>Tiempo</span><b>0,4 s</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMERCIO -->
+      <div class="col c-co" data-a="co">
+        <div class="lbl"><small>Comercio</small><span>App Comercio</span></div>
+        <div class="phone co" id="phCO">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="sbar"><span>9:41</span><span>4G ▮▮▮</span></div>
+
+            <div class="scr" data-s="co-amount">
+              <div class="app-h"><b>Almacén Don Pedro</b><div class="avatar">DP</div></div>
+              <div class="muted">Nuevo cobro</div>
+              <div class="amt-box"><div class="muted">Monto a cobrar</div><div class="big"><span id="amt">$ 0</span><i class="caret"></i></div></div>
+              <div class="keys" id="keys">
+                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>,</span><span>0</span><span>⌫</span>
+              </div>
+              <div class="btn teal" id="btnGen">Generar QR</div>
+            </div>
+
+            <div class="scr" data-s="co-qr">
+              <div class="app-h"><b>Cobro con QR</b><span class="muted">Terminal 0142</span></div>
+              <div class="qrbox">
+                <canvas class="qr" width="200" height="200"></canvas>
+                <div class="qr-amt">$ 12.500</div>
+                <div class="muted">Mostrale este QR al cliente</div>
+              </div>
+              <div style="text-align:center"><span class="pill"><i class="dot"></i>Esperando pago del cliente</span></div>
+            </div>
+
+            <div class="scr" data-s="co-ok">
+              <div class="center">
+                <div class="okc"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+                <b style="font-size:16px">Cobro aprobado</b>
+                <div class="big" style="font-size:26px">$ 12.500</div>
+                <span class="pill ok">Acreditación T+1</span>
+                <div class="receipt">
+                  <div><span>Cliente</span><b>Juan P. •4523</b></div>
+                  <div><span>Autorización</span><b>A-708315</b></div>
+                  <div><span>Ventas hoy</span><b id="coSales">$ 312.800</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EMISOR / BACK OFFICE -->
+      <div class="col c-bo" data-a="em">
+        <div class="lbl"><small>Emisor</small><span>Back office · Tarjeta Regional</span></div>
+        <div class="bo" id="bo">
+          <nav class="side" aria-label="Menú back office">
+            <div class="t">Tarjeta Regional</div>
+            <div class="s">Back office emisor</div>
+            <a class="on">Monitor en vivo</a>
+            <a>Transacciones</a>
+            <a>Comercios y QR</a>
+            <a>Tarjetahabientes</a>
+            <a>Liquidaciones</a>
+            <a>Conciliación</a>
+            <div class="ft">Plataforma de procesamiento<br>Autorizador del emisor</div>
+          </nav>
+          <div class="main">
+            <h3>Monitor en vivo <span class="live"><i class="dot"></i>En línea</span></h3>
+            <div class="kpis">
+              <div class="kpi" id="k1"><small>Tx hoy</small><b id="kTx">1.284</b></div>
+              <div class="kpi" id="k2"><small>Monto procesado</small><b id="kAmt">$ 18,42 M</b></div>
+              <div class="kpi"><small>Aprobación</small><b>97,8 %</b></div>
+              <div class="kpi"><small>Comercios activos</small><b>146</b></div>
+            </div>
+            <div class="split">
+              <div class="panel">
+                <h4>Transacciones</h4>
+                <table>
+                  <thead><tr><th>Hora</th><th>Comercio</th><th>Tarjeta</th><th class="r">Monto</th><th>Estado</th></tr></thead>
+                  <tbody id="tx">
+                    <tr><td class="m">10:41:52</td><td>Farmacia Centro</td><td class="m">•7781</td><td class="m r">8.900</td><td><span class="st">Aprobada</span></td></tr>
+                    <tr><td class="m">10:41:17</td><td>Panadería Sol</td><td class="m">•2210</td><td class="m r">3.250</td><td><span class="st">Aprobada</span></td></tr>
+                    <tr><td class="m">10:40:58</td><td>Ferretería Norte</td><td class="m">•9034</td><td class="m r">21.400</td><td><span class="st rej">Sin saldo</span></td></tr>
+                    <tr><td class="m">10:40:31</td><td>Kiosco 25 de Mayo</td><td class="m">•1167</td><td class="m r">1.800</td><td><span class="st">Aprobada</span></td></tr>
+                    <tr><td class="m">10:39:46</td><td>Óptica Visión</td><td class="m">•5502</td><td class="m r">46.000</td><td><span class="st">Aprobada</span></td></tr>
+                    <tr><td class="m">10:39:02</td><td>Carnicería El Gaucho</td><td class="m">•3378</td><td class="m r">15.600</td><td><span class="st">Aprobada</span></td></tr>
+                    <tr><td class="m">10:38:40</td><td>Librería Central</td><td class="m">•6120</td><td class="m r">7.350</td><td><span class="st">Aprobada</span></td></tr>
+                    <tr><td class="m">10:38:11</td><td>Verdulería La Huerta</td><td class="m">•8843</td><td class="m r">4.100</td><td><span class="st">Aprobada</span></td></tr>
+                    <tr><td class="m">10:37:55</td><td>Almacén Don Pedro</td><td class="m">•2290</td><td class="m r">9.800</td><td><span class="st">Aprobada</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="panel" id="liq">
+                <h4>Liquidación · Almacén Don Pedro</h4>
+                <div class="liq">
+                  <div><span>Ventas del día</span><b id="lVen">$ 312.800</b></div>
+                  <div><span>Operaciones</span><b id="lOps">27</b></div>
+                  <div><span>Arancel emisor</span><b id="lAr">$ 4.692</b></div>
+                  <div><span>Neto a acreditar</span><b id="lNet">$ 308.108</b></div>
+                  <div><span>Fecha de pago</span><b>T+1 · 09/10</b></div>
+                </div>
+                <div class="conc" id="conc">◷ Conciliación pendiente de cierre</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rail" id="rail" aria-hidden="true">
+      <div class="track"></div>
+      <div class="port" data-p="th"></div>
+      <div class="port" data-p="co"></div>
+      <div class="port" data-p="em"></div>
+      <div class="authz" id="authz">
+        <div class="ic">AUT</div>
+        <span>Autorizador del emisor</span>
+        <div class="checks"><span id="c1">Tarjeta activa</span><span id="c2">Límite</span><span id="c3">Antifraude</span></div>
+      </div>
+      <div class="rail-lbl"><b>Circuito cerrado</b>Red propia del emisor · sin red internacional · sin adquirente externo</div>
+    </div>
+  </section>
+
+  <section class="thesis" id="thesis">
+    <p><b>El pago nunca sale del circuito.</b> El emisor autoriza, liquida y concilia en su propia red: menor costo por transacción, acreditación previsible al comercio y datos completos de cada compra.</p>
+    <div class="ctrls">
+      <button id="bPrev" type="button" aria-label="Paso anterior">◀</button>
+      <button id="bPlay" type="button">Pausa</button>
+      <button id="bNext" type="button" aria-label="Paso siguiente">▶</button>
+    </div>
+  </section>
+
+  <footer class="foot"><span>2026</span><span>Demo conceptual · Gastón Henríquez</span><span>Closed Loop<i>/</i></span></footer>
+</div>
+
+<script>
+(function(){
+  if (location.hash === '#record' || location.search.indexOf('record') > -1) document.body.classList.add('rec');
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* QR simulado (determinístico) */
+  function drawQR(cv){
+    const ctx = cv.getContext('2d'), N = 29, s = cv.width / N;
+    let seed = 708315; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle = '#1D2B6C';
+    const inFinder = (x,y) => (x<8&&y<8)||(x>N-9&&y<8)||(x<8&&y>N-9);
+    for (let y=0;y<N;y++) for (let x=0;x<N;x++) if(!inFinder(x,y) && rnd()>.52) ctx.fillRect(x*s,y*s,s+.3,s+.3);
+    [[0,0],[N-7,0],[0,N-7]].forEach(([fx,fy])=>{
+      ctx.fillStyle='#1D2B6C'; ctx.fillRect(fx*s,fy*s,7*s,7*s);
+      ctx.fillStyle='#fff'; ctx.fillRect((fx+1)*s,(fy+1)*s,5*s,5*s);
+      ctx.fillStyle='#FA5555'; ctx.fillRect((fx+2)*s,(fy+2)*s,3*s,3*s);
+    });
+    ctx.fillStyle='#fff'; ctx.fillRect(11.5*s,11.5*s,6*s,6*s);
+    ctx.fillStyle='#526CFD'; ctx.beginPath(); ctx.arc(14.5*s,14.5*s,2.2*s,0,7); ctx.fill();
+  }
+  $$('canvas.qr').forEach(drawQR);
+
+  /* Pasos */
+  const STEPS = [
+    {t:'El comercio carga el monto y genera el QR', d:'Desde la App Comercio: monto $ 12.500, terminal 0142. El QR identifica al comercio adherido y al importe.', who:['co'], dur:5200},
+    {t:'El tarjetahabiente escanea con su app', d:'La Tarjeta Regional está embebida en la app: solo se guardan los últimos 4 dígitos, sin PAN completo ni CVV.', who:['th','co'], dur:5000},
+    {t:'Confirma el pago con biometría', d:'Ve comercio, monto y cuotas, y confirma con huella o PIN. No hace falta plástico ni POS.', who:['th'], dur:4800},
+    {t:'El autorizador del emisor aprueba en menos de 1 segundo', d:'La operación viaja por la red del emisor: valida tarjeta, límite disponible y reglas antifraude.', who:['th','em'], dur:5600},
+    {t:'Comercio y cliente reciben la confirmación al instante', d:'Ambas apps muestran el mismo número de autorización. El back office registra la venta en tiempo real.', who:['th','co','em'], dur:5000},
+    {t:'Liquidación y conciliación dentro del circuito', d:'El emisor calcula arancel, neto y fecha de pago al comercio, y concilia contra lo autorizado.', who:['em'], dur:6200}
+  ];
+  const bar = $('#bar');
+  STEPS.forEach(()=>{ const i=document.createElement('i'); i.appendChild(document.createElement('b')); bar.appendChild(i); });
+
+  let step = 0, timers = [], playing = true, anims = [], stepStart = 0, barAnim = null;
+  const later = (ms, fn) => timers.push(setTimeout(fn, reduce ? Math.min(ms, 50) : ms));
+  function clear(){ timers.forEach(clearTimeout); timers = []; anims.forEach(a=>{try{a.cancel()}catch(e){}}); anims = []; $$('.pk').forEach(p=>p.remove()); }
+
+  function show(phoneSel, name){
+    $$(phoneSel + ' .scr').forEach(s => s.classList.toggle('show', s.dataset.s === name));
+  }
+
+  /* Posiciones del riel */
+  const stage = $('#stage'), rail = $('#rail');
+  function portX(a){
+    const el = document.querySelector('.col[data-a="'+a+'"] ' + (a==='em' ? '.bo' : '.phone'));
+    const r = el.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+    return r.left - sr.left + r.width/2;
+  }
+  function layoutRail(){
+    if (getComputedStyle(rail).display === 'none') return;
+    ['th','co','em'].forEach(a => { rail.querySelector('[data-p="'+a+'"]').style.left = portX(a) + 'px'; });
+    $('#authz').style.left = portX('em') + 'px';
+  }
+  window.addEventListener('resize', layoutRail);
+
+  function packet(from, to, label, dur){
+    if (getComputedStyle(rail).display === 'none' || reduce) return;
+    const sr = stage.getBoundingClientRect(), rr = rail.getBoundingClientRect();
+    const yDev = rr.top - sr.top - 24, yTrack = rr.top - sr.top + 36;
+    const x1 = portX(from), x2 = portX(to);
+    const pk = document.createElement('div'); pk.className = 'pk';
+    if (label) { const em = document.createElement('em'); em.textContent = label; pk.appendChild(em); }
+    stage.appendChild(pk);
+    const total = Math.abs(yTrack-yDev)*2 + Math.abs(x2-x1);
+    const o1 = Math.abs(yTrack-yDev)/total, o2 = (Math.abs(yTrack-yDev)+Math.abs(x2-x1))/total;
+    const a = pk.animate([
+      {left:x1+'px', top:yDev+'px', offset:0},
+      {left:x1+'px', top:yTrack+'px', offset:o1},
+      {left:x2+'px', top:yTrack+'px', offset:o2},
+      {left:x2+'px', top:(to==='em'? yTrack : yDev)+'px', offset:1}
+    ], {duration:dur, easing:'ease-in-out', fill:'forwards'});
+    anims.push(a);
+    a.onfinish = () => later(250, ()=>pk.remove());
+    const lit = rail.querySelector('[data-p="'+from+'"]'); lit.classList.add('live');
+    later(dur, ()=> rail.querySelector('[data-p="'+to+'"]').classList.add('live'));
+  }
+
+  /* Estado base por paso (permite saltar) */
+  const NEW_ROW_ID = 'rowNew';
+  function base(i){
+    // tarjetahabiente
+    show('#phTH', i<=0 ? 'th-home' : i===1 ? 'th-scan' : i===2 ? 'th-confirm' : i===3 ? 'th-proc' : 'th-ok');
+    show('#phCO', i===0 ? 'co-amount' : i<=3 ? 'co-qr' : 'co-ok');
+    $('#amt').textContent = '$ 0';
+    $('#btnPay').classList.remove('press'); $('#btnGen').classList.remove('press');
+    $('#readOk').classList.remove('on'); $('#scanline').style.display = '';
+    $('#fp').className = 'fp'; $('#fpTxt').textContent = 'Apoyá tu huella para confirmar';
+    // back office
+    const nr = document.getElementById(NEW_ROW_ID);
+    if (i <= 3 && nr) nr.remove();
+    if (i >= 4 && !nr) addRow(true);
+    $('#kTx').textContent = i>=4 ? '1.285' : '1.284';
+    $('#kAmt').textContent = i>=4 ? '$ 18,43 M' : '$ 18,42 M';
+    $('#k1').classList.remove('flash'); $('#k2').classList.remove('flash');
+    const after = i>=4;
+    $('#lVen').textContent = after ? '$ 325.300' : '$ 312.800';
+    $('#lOps').textContent = after ? '28' : '27';
+    $('#lAr').textContent = after ? '$ 4.880' : '$ 4.692';
+    $('#lNet').textContent = after ? '$ 320.420' : '$ 308.108';
+    $('#coSales').textContent = '$ 325.300';
+    $('#liq').classList.remove('glow');
+    const conc = $('#conc'); conc.classList.remove('on'); conc.textContent = '◷ Conciliación pendiente de cierre';
+    // riel
+    const az = $('#authz'); az.className = 'authz' + (i>=4 ? ' ok' : '');
+    ['c1','c2','c3'].forEach(c => $('#'+c).classList.toggle('y', i>=4));
+    rail.classList.remove('full');
+    $$('.port').forEach(p => p.classList.remove('live'));
+    $('#thesis').classList.remove('on');
+    // actores
+    $$('.col').forEach(c => c.classList.toggle('dim', !STEPS[i].who.includes(c.dataset.a)));
+    $$('.chip').forEach(c => c.classList.toggle('on', STEPS[i].who.includes(c.dataset.a)));
+    $('#num').textContent = i+1;
+    $('#capT').textContent = STEPS[i].t;
+    $('#capD').textContent = STEPS[i].d;
+    $$('#bar i').forEach((b,k)=>{ b.classList.toggle('done', k<i); b.querySelector('b').style.width = k<i ? '100%' : '0'; });
+  }
+
+  function addRow(approved){
+    const tb = $('#tx');
+    const tr = document.createElement('tr'); tr.id = NEW_ROW_ID; tr.className = 'new';
+    tr.innerHTML = '<td class="m">10:42:06</td><td><b>Almacén Don Pedro</b></td><td class="m">•4523</td><td class="m r">12.500</td><td><span class="st '+(approved?'':'pend')+'">'+(approved?'Aprobada':'En curso')+'</span></td>';
+    tb.insertBefore(tr, tb.firstChild);
+    if (tb.children.length > 9) tb.lastElementChild.remove();
+  }
+
+  function typeAmount(){
+    const seq = [['1','$ 1'],['2','$ 12'],['5','$ 125'],['0','$ 1.250'],['0','$ 12.500']];
+    const keys = $$('#keys span');
+    seq.forEach(([k,txt],n)=>later(500 + n*380, ()=>{
+      $('#amt').textContent = txt;
+      const key = keys.find(e=>e.textContent===k); key.classList.add('hit'); later(200, ()=>key.classList.remove('hit'));
+    }));
+    later(2700, ()=> $('#btnGen').classList.add('press'));
+    later(3100, ()=> show('#phCO','co-qr'));
+  }
+
+  function run(i){
+    clear(); base(i); layoutRail();
+    stepStart = performance.now();
+    const fill = $$('#bar i')[i].querySelector('b');
+    if (barAnim) barAnim.cancel();
+    barAnim = fill.animate([{width:'0%'},{width:'100%'}], {duration:STEPS[i].dur, fill:'forwards'});
+    if (!playing) barAnim.pause();
+    switch(i){
+      case 0: typeAmount(); break;
+      case 1:
+        show('#phTH','th-home');
+        later(500, ()=> $('#btnPay').classList.add('press'));
+        later(1100, ()=> show('#phTH','th-scan'));
+        later(3300, ()=>{ $('#readOk').classList.add('on'); $('#scanline').style.display='none'; });
+        break;
+      case 2:
+        later(1300, ()=>{ $('#fp').classList.add('scanning'); $('#fpTxt').textContent='Leyendo huella…'; });
+        later(2900, ()=>{ $('#fp').className='fp okk'; $('#fpTxt').textContent='Identidad validada'; });
+        break;
+      case 3:
+        packet('th','em','Autorización · $12.500', 1700);
+        later(1100, ()=>{ addRow(false); });
+        later(1700, ()=>{ $('#authz').classList.add('busy'); });
+        later(2100, ()=> $('#c1').classList.add('y'));
+        later(2500, ()=> $('#c2').classList.add('y'));
+        later(2900, ()=> $('#c3').classList.add('y'));
+        later(3300, ()=>{
+          const az=$('#authz'); az.classList.remove('busy'); az.classList.add('ok');
+          const st = document.querySelector('#'+NEW_ROW_ID+' .st'); if (st){ st.className='st'; st.textContent='Aprobada'; }
+        });
+        break;
+      case 4:
+        show('#phTH','th-proc'); show('#phCO','co-qr');
+        $('#kTx').textContent='1.284'; $('#kAmt').textContent='$ 18,42 M';
+        packet('em','th','Aprobada', 1500);
+        packet('em','co','Aprobada', 1500);
+        later(1550, ()=>{ show('#phTH','th-ok'); show('#phCO','co-ok'); });
+        later(1900, ()=>{ $('#kTx').textContent='1.285'; $('#kAmt').textContent='$ 18,43 M'; $('#k1').classList.add('flash'); $('#k2').classList.add('flash'); });
+        break;
+      case 5:
+        rail.classList.add('full');
+        later(500, ()=> $('#liq').classList.add('glow'));
+        later(2200, ()=>{ const c=$('#conc'); c.classList.add('on'); c.textContent='✓ Conciliado · 28 de 28 operaciones'; });
+        later(2800, ()=> $('#thesis').classList.add('on'));
+        break;
+    }
+    if (playing) later(STEPS[i].dur, ()=> run((i+1) % STEPS.length));
+    step = i;
+  }
+
+  $('#bPlay').addEventListener('click', ()=>{
+    playing = !playing;
+    $('#bPlay').textContent = playing ? 'Pausa' : 'Reproducir';
+    if (playing) run(step); else { timers.forEach(clearTimeout); timers=[]; if (barAnim) barAnim.pause(); }
+  });
+  $('#bNext').addEventListener('click', ()=> run((step+1) % STEPS.length));
+  $('#bPrev').addEventListener('click', ()=> run((step+STEPS.length-1) % STEPS.length));
+  document.addEventListener('keydown', e=>{
+    if (e.key==='ArrowRight') $('#bNext').click();
+    else if (e.key==='ArrowLeft') $('#bPrev').click();
+    else if (e.key===' ') { e.preventDefault(); $('#bPlay').click(); }
+  });
+
+  const start = () => { layoutRail(); run(0); };
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(start); else start();
+})();
+</script>
+</body></html>
