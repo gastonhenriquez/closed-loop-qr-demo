@@ -30,6 +30,13 @@ Un emisor regional de tarjetas (comercios regionales, municipios, cooperativas, 
 
 Especificación completa: [`docs/spec.md`](docs/spec.md).
 
+## Backlog listo para desarrollo
+
+La spec bajada a un backlog con estructura **SAFe**: 1 Epic con hypothesis statement, 11 Features con benefit hypothesis, 27 User Stories y 8 Enablers con criterios de aceptación en formato Dado / Cuando / Entonces, NFRs, Definition of Done y 10 preguntas abiertas detectadas al refinar el alcance.
+
+* Para leer: [`docs/backlog.md`](docs/backlog.md)
+* Para importar en Azure DevOps o Jira: [`docs/backlog.csv`](docs/backlog.csv)
+
 ## Cómo se construyó
 
 Documento de alcance → prototipo con Claude → iteración sobre la lógica de negocio → revisión de consistencia contra la spec. Detalle en [`docs/proceso.md`](docs/proceso.md).
